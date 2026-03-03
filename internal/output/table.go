@@ -173,6 +173,98 @@ func CostDiffs(w io.Writer, diffs []cloud.CostDiff) {
 	}
 }
 
+// NetworkFindings renders a network security findings table.
+func NetworkFindings(w io.Writer, findings []cloud.NetworkFinding) {
+	if len(findings) == 0 {
+		fmt.Fprintln(w, dimStyle.Render("no findings"))
+		return
+	}
+	tw := tabwriter.NewWriter(w, 0, 0, 2, ' ', 0)
+	fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
+		headerStyle.Render("SEVERITY"),
+		headerStyle.Render("TYPE"),
+		headerStyle.Render("PROVIDER"),
+		headerStyle.Render("RESOURCE"),
+		headerStyle.Render("REGION"),
+		headerStyle.Render("PORT"),
+		headerStyle.Render("CIDR"),
+		headerStyle.Render("DETAIL"),
+	)
+	for _, f := range findings {
+		sev := colorSeverity(f.Severity).Render(string(f.Severity))
+		fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
+			sev, string(f.Type), f.Provider, f.Resource, f.Region, f.Port, f.CIDR, truncate(f.Detail, 60),
+		)
+	}
+	tw.Flush()
+}
+
+// CertFindings renders a certificate expiry findings table.
+func CertFindings(w io.Writer, findings []cloud.CertFinding) {
+	if len(findings) == 0 {
+		fmt.Fprintln(w, dimStyle.Render("no findings"))
+		return
+	}
+	tw := tabwriter.NewWriter(w, 0, 0, 2, ' ', 0)
+	fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
+		headerStyle.Render("SEVERITY"),
+		headerStyle.Render("STATUS"),
+		headerStyle.Render("PROVIDER"),
+		headerStyle.Render("DOMAIN"),
+		headerStyle.Render("REGION"),
+		headerStyle.Render("EXPIRES"),
+		headerStyle.Render("DAYS"),
+	)
+	for _, f := range findings {
+		sev := colorSeverity(f.Severity).Render(string(f.Severity))
+		expires := f.ExpiresAt.Format("2006-01-02")
+		days := fmt.Sprintf("%d", f.DaysLeft)
+		if f.DaysLeft < 0 {
+			days = critStyle.Render(days)
+			expires = critStyle.Render(expires)
+		} else if f.DaysLeft < 7 {
+			days = critStyle.Render(days)
+		} else if f.DaysLeft < 30 {
+			days = highStyle.Render(days)
+		}
+		fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
+			sev, string(f.Status), f.Provider, f.Domain, f.Region, expires, days,
+		)
+	}
+	tw.Flush()
+}
+
+// TagFindings renders a missing tags findings table.
+func TagFindings(w io.Writer, findings []cloud.TagFinding) {
+	if len(findings) == 0 {
+		fmt.Fprintln(w, dimStyle.Render("no findings"))
+		return
+	}
+	tw := tabwriter.NewWriter(w, 0, 0, 2, ' ', 0)
+	fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\t%s\n",
+		headerStyle.Render("SEVERITY"),
+		headerStyle.Render("PROVIDER"),
+		headerStyle.Render("TYPE"),
+		headerStyle.Render("RESOURCE"),
+		headerStyle.Render("REGION"),
+		headerStyle.Render("MISSING"),
+	)
+	for _, f := range findings {
+		sev := colorSeverity(f.Severity).Render(string(f.Severity))
+		missing := ""
+		for i, t := range f.MissingTags {
+			if i > 0 {
+				missing += ", "
+			}
+			missing += t
+		}
+		fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\t%s\n",
+			sev, f.Provider, f.ResourceType, f.ResourceID, f.Region, missing,
+		)
+	}
+	tw.Flush()
+}
+
 func truncate(s string, n int) string {
 	if n < 4 || len(s) <= n {
 		return s

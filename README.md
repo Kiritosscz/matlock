@@ -2,7 +2,7 @@
 
 Multi-cloud security and cost swiss army knife — single binary, zero dependencies.
 
-Audit IAM permissions, spot cost anomalies, find orphaned resources, and flag insecure storage across AWS, GCP, and Azure.
+Audit IAM permissions, spot cost anomalies, find orphaned resources, flag insecure storage, detect overly permissive firewall rules, monitor TLS certificate expiry, and enforce resource tagging across AWS, GCP, and Azure.
 
 <!-- screenshot placeholder -->
 <!-- ![matlock iam scan output](docs/screenshots/iam-scan.png) -->
@@ -93,7 +93,13 @@ Required IAM permissions for a read-only audit role:
         "s3:GetBucketEncryption",
         "s3:GetBucketVersioning",
         "s3:GetBucketLogging",
-        "s3:GetBucketPublicAccessBlock"
+        "s3:GetBucketPublicAccessBlock",
+        "s3:GetBucketTagging",
+        "acm:ListCertificates",
+        "acm:DescribeCertificate",
+        "rds:DescribeDBInstances",
+        "lambda:ListFunctions",
+        "lambda:ListTags"
       ],
       "Resource": "*"
     }
@@ -121,6 +127,7 @@ Required IAM roles for the service account:
 - `roles/billing.viewer`
 - `roles/storage.objectViewer`
 - `roles/compute.viewer`
+- `roles/certificatemanager.viewer` (for `matlock certs`)
 
 ### Azure
 
@@ -139,6 +146,7 @@ export AZURE_SUBSCRIPTION_ID=...
 Required role assignments:
 - `Reader` on the subscription
 - `Cost Management Reader` on the subscription
+- `Key Vault Reader` + `Key Vault Certificates Officer` (or `Key Vault Reader` if using RBAC-enabled vaults) for `matlock certs`
 
 ---
 
@@ -309,6 +317,104 @@ matlock storage audit --output json --output-file storage-findings.json
 |------|---------|-------------|
 | `--provider` | auto | Cloud providers to scan |
 | `--severity` | `LOW` | Minimum severity to report |
+| `--output` | `table` | Output format: `table`, `json` |
+| `--output-file` | | Write output to file instead of stdout |
+
+---
+
+### `matlock network audit` — overly permissive firewall rules
+
+Checks security groups (AWS), firewall rules (GCP), and network security groups (Azure) for rules that expose sensitive ports to the internet.
+
+Severity rules:
+- **CRITICAL** — `0.0.0.0/0` on SSH (22), RDP (3389), or database ports (3306, 5432, 1433, 27017, 6379, 9200)
+- **HIGH** — `0.0.0.0/0` on any non-HTTP/HTTPS port
+- **MEDIUM** — unrestricted egress (all traffic to `0.0.0.0/0`)
+
+```sh
+# All providers
+matlock network audit
+
+# AWS only, show CRITICAL findings
+matlock network audit --provider aws --severity CRITICAL
+
+# JSON output
+matlock network audit --output json --output-file network-findings.json
+```
+
+**Flags**
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--provider` | auto | Cloud providers to scan |
+| `--severity` | `LOW` | Minimum severity to report |
+| `--output` | `table` | Output format: `table`, `json` |
+| `--output-file` | | Write output to file instead of stdout |
+
+---
+
+### `matlock certs` — TLS certificate expiry
+
+Lists TLS certificates from ACM (AWS), Certificate Manager (GCP), and Azure Key Vault that are expired or expiring soon.
+
+Severity rules:
+- **CRITICAL** — expired, or expiring within 7 days
+- **HIGH** — expiring within 30 days
+- **MEDIUM** — expiring within 60 days
+- **LOW** — expiring within 90 days (default `--days` threshold)
+
+```sh
+# All providers, warn on certs expiring within 90 days (default)
+matlock certs
+
+# Only show certs expiring within 30 days
+matlock certs --days 30
+
+# AWS only, CRITICAL and HIGH only
+matlock certs --provider aws --severity HIGH
+
+# JSON output
+matlock certs --output json --output-file certs.json
+```
+
+**Flags**
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--provider` | auto | Cloud providers to scan |
+| `--days` | `90` | Include certs expiring within this many days |
+| `--severity` | `LOW` | Minimum severity to report |
+| `--output` | `table` | Output format: `table`, `json` |
+| `--output-file` | | Write output to file instead of stdout |
+
+> **GCP note:** Certificate Manager must be enabled in your project (`gcloud services enable certificatemanager.googleapis.com`). If the API is not enabled, `matlock certs` skips GCP with a warning.
+
+---
+
+### `matlock tags` — missing resource tags/labels
+
+Audits EC2 instances, S3 buckets, RDS databases, Lambda functions (AWS), compute instances and GCS buckets (GCP), and all resource types (Azure) for missing required tags or labels.
+
+All findings are **MEDIUM** severity.
+
+```sh
+# Require owner, env, and cost-center tags across all providers
+matlock tags --require owner,env,cost-center
+
+# AWS only
+matlock tags --provider aws --require owner,env
+
+# JSON output
+matlock tags --require owner,env --output json --output-file tags.json
+```
+
+**Flags**
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--provider` | auto | Cloud providers to scan |
+| `--require` | (required) | Comma-separated tag/label keys that must be present |
+| `--severity` | `MEDIUM` | Minimum severity to report |
 | `--output` | `table` | Output format: `table`, `json` |
 | `--output-file` | | Write output to file instead of stdout |
 

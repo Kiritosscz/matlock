@@ -65,6 +65,36 @@ func WriteCost(w io.Writer, diffs []cloud.CostDiff) error {
 	return writeJSON(w, costReport{Diffs: diffs})
 }
 
+type networkReport struct {
+	Findings []cloud.NetworkFinding `json:"findings"`
+	Total    int                   `json:"total"`
+}
+
+type certsReport struct {
+	Findings []cloud.CertFinding `json:"findings"`
+	Total    int                 `json:"total"`
+}
+
+type tagsReport struct {
+	Findings []cloud.TagFinding `json:"findings"`
+	Total    int                `json:"total"`
+}
+
+// WriteNetwork marshals network findings as JSON to w.
+func WriteNetwork(w io.Writer, findings []cloud.NetworkFinding) error {
+	return writeJSON(w, networkReport{Findings: findings, Total: len(findings)})
+}
+
+// WriteCerts marshals certificate findings as JSON to w.
+func WriteCerts(w io.Writer, findings []cloud.CertFinding) error {
+	return writeJSON(w, certsReport{Findings: findings, Total: len(findings)})
+}
+
+// WriteTags marshals tag findings as JSON to w.
+func WriteTags(w io.Writer, findings []cloud.TagFinding) error {
+	return writeJSON(w, tagsReport{Findings: findings, Total: len(findings)})
+}
+
 func writeJSON(w io.Writer, v any) error {
 	enc := json.NewEncoder(w)
 	enc.SetIndent("", "  ")

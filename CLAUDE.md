@@ -17,6 +17,9 @@ Differentiator: single binary, multi-cloud (aws/gcp/azure), four distinct domain
 - `matlock cost diff` — spend delta between two time windows
 - `matlock orphans` — unused disks, IPs, load balancers
 - `matlock storage audit` — public buckets, unencrypted storage, versioning, logging
+- `matlock network audit` — overly permissive security groups / firewall rules / NSGs
+- `matlock certs` — TLS certificates expiring within configurable thresholds
+- `matlock tags` — resources missing required tags/labels
 
 ## code conventions
 
